@@ -340,6 +340,26 @@ class TPromise {
     if (!isIterator(values)) {
       throw new TypeError("values must be iterator object.");
     }
+    return new TPromise((resolve) => {
+      let results: any[] = [];
+      let count = 0;
+      let index = 0;
+      for (const value of values) {
+        let resultIndex = index;
+        index++;
+        TPromise.resolve(value).then(
+          (value) => {
+            results[resultIndex] = value;
+            if (index === count) {
+              resolve(results);
+            }
+          },
+          (reason) => {
+            results[resultIndex] = reason;
+          }
+        );
+      }
+    });
   }
 }
 
