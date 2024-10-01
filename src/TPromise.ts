@@ -264,6 +264,11 @@ class TPromise{
     })
   }
 
+  /**
+   * TPromise.any
+   * @param values 
+   * @returns 
+   */
   static any(values){
     if(!isIterator(values)){
       throw new TypeError('values must be iterator object.')
@@ -287,6 +292,25 @@ class TPromise{
       }
       if(index === 0){
         reject(results)
+      }
+    })
+  }
+
+  /**
+   * TPromise.race
+   * @param values 
+   */
+  static race(values){
+    if(!isIterator(values)){
+      throw new TypeError('values must be iterator object.')
+    }
+    return new TPromise((resolve, reject) => {
+      for(const value of values){
+        TPromise.resolve(value).then(value => {
+          resolve(value)
+        }, reason => {
+          reject(reason)
+        })
       }
     })
   }
