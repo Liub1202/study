@@ -263,6 +263,33 @@ class TPromise{
       }
     })
   }
+
+  static any(values){
+    if(!isIterator(values)){
+      throw new TypeError('values must be iterator object.')
+    }
+    return new TPromise((resolve, reject) => {
+      let results: any[] = []
+      let count = 0
+      let index = 0
+      for(const value of values) {
+        let resultIndex = index
+        index ++
+        TPromise.resolve(value).then(value => {
+          resolve(value)
+        }, reason => {
+          results[resultIndex] = reason
+          count ++
+          if(count === index){
+            reject(results)
+          }
+        })
+      }
+      if(index === 0){
+        reject(results)
+      }
+    })
+  }
 }
 
 
