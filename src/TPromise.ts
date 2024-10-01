@@ -186,4 +186,22 @@ class TPromise{
       resolve(data)
     }
   }
+
+  static resolve(value) {
+    if(value instanceof TPromise){
+      return value
+    }
+    return new TPromise((resolve) => {
+      resolve(value)
+    })
+  }
+
+  static reject(reason) {
+    if(reason instanceof TPromise) {
+      return reason
+    }
+    return new TPromise(reject => {
+      reject(reject)
+    })
+  }
 }
