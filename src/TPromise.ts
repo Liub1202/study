@@ -128,65 +128,10 @@ class TPromise{
   }
 
   /**
-   * 工具函数，判断是否为 Func
-   * @param fn 
+   * 静态 resolve 方法
+   * @param value 
    * @returns 
    */
-  isFunc(fn) {
-    return typeof fn === 'function'
-  }
-
-  /**
-   * 工具函数，判断是否为对象
-   * @param obj 
-   * @returns 
-   */
-  isObject(obj) {
-    return Object.prototype.toString.call(obj) === '[Object Object]'
-  }
-
-  /**
-   * 工具函数， 判断 onFulfilled 和 onRejected 的回调是不是不传递，或者不是函数类型
-   * @param promise 
-   * @param data onFulfilled or onRejected 的回调函数
-   * @param resolve 
-   * @param reject 
-   */
-  resolvePromise(promise, data, resolve, reject) {
-    if (data === promise) {
-      return reject(new Error('禁止循环引用'))
-    }
-    // 多次调用resolve 或者reject 以第一次为主，忽略后面的调用
-    let called = false
-    if((this.isObject(data) && data !== null) || this.isFunc(data)) {
-      try {
-        const then = data.then
-        if(this.isFunc(then)) {
-          then.call(data, (value) => {
-            if(called){
-              return
-            }
-            called = true
-            // 递归检查，防止 value 是一个 PromiseLike， Promise.resolve中的嵌套 thenable 在这里处理
-            this.resolvePromise(promise, value, resolve, reject)
-          }, (reason) => {
-            if(called)return
-            called = true
-            reject(reason)
-          })
-        }else {
-          resolve(data)
-        }
-      } catch (e) {
-        if(called)return
-        called = true
-        reject(this.reason)
-      }
-    }else{
-      resolve(data)
-    }
-  }
-
   static resolve(value) {
     if(value instanceof TPromise){
       return value
@@ -196,12 +141,22 @@ class TPromise{
     })
   }
 
+  /**
+   * 静态 reject方法
+   * @param reason 
+   * @returns 
+   */
   static reject(reason) {
     return new TPromise(reject => {
       reject(reason)
     })
   }
 
+  /**
+   * finally 方法
+   * @param onFinally
+   * @returns 
+   */
   finally(onFinally) {
     return this.then(
       value => TPromise.resolve(onFinally()).then(()=>value, newReason => {
@@ -214,4 +169,43 @@ class TPromise{
       })
     )
   }
+
+  /**
+   * 静态 TPromise.all
+   * @param values 
+   */
+  static all(values) {
+    if(!isIterator(values)) {
+      throw new TypeError('values must be an iterator object.')
+    }
+    return new TPromise((resolve, reject) => {
+      const results: any[] = []
+      let count = 0
+      let index = 0
+      for (const value of values) {
+        let resultIndex = index
+        index ++
+        const p = TPromise.resolve(value).then(value => {
+          results[resultIndex] = value
+          count ++
+          if(count === index){
+            resolve(results)
+          }
+        }, reason => {
+          reject(reason)
+        })
+      }
+      if(index === 0){
+        reject(results)
+      }
+    })
+  }
+}
+
+
+/**
+ * 工具函数，判断是否为可迭代对象
+ */
+function isIterator( values){
+  return typeof values[Symbol.iterator] === 'function'
 }
