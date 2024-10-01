@@ -127,6 +127,69 @@ class TPromise{
     return promise
   }
 
+
+  /**
+   * 工具函数，判断是否为 Func
+   * @param fn 
+   * 静态 resolve 方法
+   * @param value 
+   * @returns 
+   */
+  isFunc(fn) {
+    return typeof fn === 'function'
+  }
+
+  /**
+   * 工具函数，判断是否为对象
+   * @param obj 
+   * @returns 
+   */
+  isObject(obj) {
+    return Object.prototype.toString.call(obj) === '[Object Object]'
+  }
+
+  /**
+   * 工具函数， 判断 onFulfilled 和 onRejected 的回调是不是不传递，或者不是函数类型
+   * @param promise 
+   * @param data onFulfilled or onRejected 的回调函数
+   * @param resolve 
+   * @param reject 
+   */
+  resolvePromise(promise, data, resolve, reject) {
+    if (data === promise) {
+      return reject(new Error('禁止循环引用'))
+    }
+    // 多次调用resolve 或者reject 以第一次为主，忽略后面的调用
+    let called = false
+    if((this.isObject(data) && data !== null) || this.isFunc(data)) {
+      try {
+        const then = data.then
+        if(this.isFunc(then)) {
+          then.call(data, (value) => {
+            if(called){
+              return
+            }
+            called = true
+            // 递归检查，防止 value 是一个 PromiseLike， Promise.resolve中的嵌套 thenable 在这里处理
+            this.resolvePromise(promise, value, resolve, reject)
+          }, (reason) => {
+            if(called)return
+            called = true
+            reject(reason)
+          })
+        }else {
+          resolve(data)
+        }
+      } catch (e) {
+        if(called)return
+        called = true
+        reject(this.reason)
+      }
+    }else{
+      resolve(data)
+    }
+  }
+
   /**
    * 静态 resolve 方法
    * @param value 
