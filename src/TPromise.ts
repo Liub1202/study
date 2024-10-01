@@ -197,11 +197,21 @@ class TPromise{
   }
 
   static reject(reason) {
-    if(reason instanceof TPromise) {
-      return reason
-    }
     return new TPromise(reject => {
-      reject(reject)
+      reject(reason)
     })
+  }
+
+  finally(onFinally) {
+    return this.then(
+      value => TPromise.resolve(onFinally()).then(()=>value, newReason => {
+        throw newReason
+      }), 
+      (reason) => TPromise.resolve(onFinally()).then(()=>{
+        throw reason
+      }, (newReason) => {
+        throw newReason
+      })
+    )
   }
 }
