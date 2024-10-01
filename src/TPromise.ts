@@ -349,13 +349,24 @@ class TPromise {
         index++;
         TPromise.resolve(value).then(
           (value) => {
-            results[resultIndex] = value;
+            results[resultIndex] = {
+              status: "fulfilled",
+              value: value,
+            };
+            count++;
             if (index === count) {
               resolve(results);
             }
           },
           (reason) => {
-            results[resultIndex] = reason;
+            results[resultIndex] = {
+              status: "rejected",
+              reason: reason,
+            };
+            count++;
+            if (index === count) {
+              resolve(results);
+            }
           }
         );
       }
